@@ -1,0 +1,12 @@
+{
+    "locations": [
+        { "name": "Gaza City", "lat": 31.5017, "lng": 34.4668 },
+        { "name": "Khan Younis", "lat": 31.3462, "lng": 34.3032 },
+        { "name": "Rafah", "lat": 31.2969, "lng": 34.2455 },
+        { "name": "Jabalia", "lat": 31.5361, "lng": 34.4833 },
+        { "name": "Tel Aviv", "lat": 32.0853, "lng": 34.7818 },
+        { "name": "Jerusalem", "lat": 31.7683, "lng": 35.2137 },
+        { "name": "West Bank", "lat": 31.9466, "lng": 35.3027 },
+        { "name": "Beirut", "lat": 33.8938, "lng": 35.5018 }
+    ]
+}
