@@ -1,0 +1,22 @@
+{
+    "Syrian_forces": {
+        "name": "Syrian Armed Forces",
+        "color": "#0a5f1aff"
+    },
+    "SDF_forces": {
+        "name": "Syrian Democratic Forces/Rojava",
+        "color": "#f0dd4eff"
+    },
+    "Israeli_forces": {
+        "name": "Israel Defense Forces",
+        "color": "#4ec2f0ff"
+    },
+    "Druze_forces": {
+        "name": "Supreme Legal Committee in Suwayda",
+        "color": "#c2dee9ff"
+    },
+    "Turkish_occupation": {
+        "name": "Turkish Occupation Zone",
+        "color": "#ff5733"
+    }
+}
