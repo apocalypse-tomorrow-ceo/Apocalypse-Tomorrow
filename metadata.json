@@ -1,0 +1,7 @@
+{
+  "name": "Apocalypse Tomorrow",
+  "description": "A high-fidelity real-time conflict and protest monitoring dashboard using Gemini Search Grounding to visualize global instability with interactive mapping and deep-dive analysis.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
