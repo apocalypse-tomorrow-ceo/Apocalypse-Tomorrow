@@ -37,53 +37,133 @@ export const analyzeRegion = async (region: Region): Promise<AnalysisResult> => 
   
   const sourceInstruction = hasAssets
     ? `
-    CLOSED-LOOP INDEPENDENT MONITORING PROTOCOL:
-    You are strictly limited to the assets provided below. 
-    Your goal is to extract EVERY distinct tactical event (strike, movement, protest) reported by these specific channels in the last 48 hours.
-    
-    TRACKED ASSETS (and their required 'sourceAlignment' value):
-    ${region.monitoredSources?.map(s => `- Asset: ${s.name} | URL: ${s.url} | Alignment: ${s.alignment}`).join('\n')}
-    
-    SEARCH TASKS:
-    1. Search the web specifically for the latest content from these URLs.
-    2. DO NOT group multiple reports into one event. Create a separate JSON object for every individual report found.
-    3. Tag every event found via these links as "sourceCategory": "independent".
-    4. For every independent event, you MUST set "sourceAlignment" to the exact 'Alignment' string listed above for that asset.
+    ═══════════════════════════════════════════════════════════════
+    INDEPENDENT SOURCE PROTOCOL - CRITICAL PRIORITY
+    ═══════════════════════════════════════════════════════════════
+
+    You MUST search for content from the specific accounts listed below.
+    These are Telegram channels and Twitter/X accounts that report conflict events.
+
+    TRACKED ASSETS:
+    ${region.monitoredSources?.map(s => `- ${s.name} | ${s.url} | Alignment: ${s.alignment}`).join('\n')}
+
+    ═══════════════════════════════════════════════════════════════
+    SEARCH STRATEGY - EXECUTE ALL OF THESE:
+    ═══════════════════════════════════════════════════════════════
+
+    For EACH asset above, perform MULTIPLE targeted searches:
+
+    1. DIRECT CHANNEL SEARCH:
+       - Search: "site:t.me/[channel_name]" OR "site:twitter.com/[handle]" OR "site:x.com/[handle]"
+       - Look for posts from the last 48 hours
+       - Example: "site:t.me/Intel_Rojava" or "site:twitter.com/Osinttechnical"
+
+    2. RECENT CONTENT SEARCH:
+       - Add time modifiers: "after:2026-01-11" (adjust to 48 hours ago from today)
+       - Search for channel name + region name + recent keywords
+       - Example: "Intel_Rojava Syria t.me after:2026-01-11"
+
+    3. SPECIFIC EVENT SEARCH:
+       - Search for: [channel name] + [region] + ["clash" OR "strike" OR "protest" OR "attack"]
+       - Example: "Osinttechnical Ukraine strike"
+
+    4. FALLBACK SEARCH:
+       - If nothing found, search for the account name alone
+       - Check if any aggregator sites have cached/quoted their posts
+
+    ═══════════════════════════════════════════════════════════════
+    EXTRACTION RULES:
+    ═══════════════════════════════════════════════════════════════
+
+    1. Extract EVERY individual event/incident mentioned in posts you find
+    2. DO NOT summarize multiple events into one - each gets its own JSON object
+    3. If a post mentions "3 strikes in different locations" - create 3 separate events
+    4. Each event MUST have:
+       - "sourceCategory": "independent" (mandatory)
+       - "sourceAlignment": Must match the exact 'Alignment' string from the asset list above
+       - "sourceUrl": Direct link to the Telegram/Twitter post if available
+
+    5. MINIMUM GOAL: Find at least 3-5 events per tracked asset (if they exist)
+
+    6. If you find a post, extract ALL events mentioned in it, not just the main one
+
+    ═══════════════════════════════════════════════════════════════
+    QUALITY CHECKLIST:
+    ═══════════════════════════════════════════════════════════════
+    ✓ Did I search each asset individually?
+    ✓ Did I try multiple search strategies per asset?
+    ✓ Did I extract every distinct event (not just summaries)?
+    ✓ Did I set sourceAlignment correctly for each event?
+    ✓ Did I provide direct sourceUrl links when possible?
+
+    INDEPENDENT EVENTS ARE CRITICAL - Be thorough and aggressive in your searches.
     `
-    : "The 'Independent' feed must remain empty.";
+    : "INDEPENDENT PROTOCOL DISABLED: No tracked assets configured for this region. Skip independent searches entirely.";
 
   const prompt = `
-    Analyze ${region.name} for tactical shifts (last 48 hours).
-    
+    ═══════════════════════════════════════════════════════════════
+    MISSION: ${region.name} Tactical Intelligence Feed (Last 48 Hours)
+    ═══════════════════════════════════════════════════════════════
+
     ${sourceInstruction}
 
-    MAINSTREAM PROTOCOL:
-    - Identify reports from major global news agencies (Reuters, AP, BBC, etc.).
-    - Tag these as "sourceCategory": "mainstream".
-    - "sourceAlignment" should be null for mainstream.
+    ═══════════════════════════════════════════════════════════════
+    MAINSTREAM PROTOCOL - SECONDARY PRIORITY
+    ═══════════════════════════════════════════════════════════════
 
-    DATA EXTRACTION GOAL:
-    Provide as many distinct, verified event points as possible. I want a granular feed, not a summary.
+    Search for reports from major global news agencies about ${region.name}:
+    - Reuters, Associated Press (AP), BBC, CNN, Al Jazeera, AFP
+    - Regional major outlets relevant to ${region.name}
+    - Search terms: "${region.name} conflict", "${region.name} protest", "${region.name} military"
 
-    OUTPUT FORMAT:
-    Provide a situational summary text, then a JSON list of events:
+    MAINSTREAM TAGGING:
+    - "sourceCategory": "mainstream" (mandatory)
+    - "sourceAlignment": null (mandatory - mainstream sources are unaligned)
+    - Extract individual events (don't group multiple incidents into one)
+
+    ═══════════════════════════════════════════════════════════════
+    DATA EXTRACTION REQUIREMENTS
+    ═══════════════════════════════════════════════════════════════
+
+    CRITICAL: I need GRANULAR events, not summaries!
+    - Each bombing/strike/protest/clash = separate JSON object
+    - If article mentions "3 airstrikes in Damascus" = 3 separate events
+    - Minimum 10-15 total events across both independent and mainstream
+
+    ═══════════════════════════════════════════════════════════════
+    OUTPUT FORMAT
+    ═══════════════════════════════════════════════════════════════
+
+    First, provide a 2-3 sentence situational summary of ${region.name}.
+
+    Then, provide a JSON array of events:
+
     [
       {
-        "title": "Tactical/Short Title",
-        "description": "Granular details: Who, what, weapon types, or units involved.",
+        "title": "Concise tactical title (max 10 words)",
+        "description": "Detailed description: Who attacked, what weapon/method, casualties, units involved, context",
         "type": "CONFLICT" | "PROTEST" | "RIOT" | "MILITARY_MOVE" | "STRIKE",
         "severity": "low" | "medium" | "high" | "critical",
         "lat": numerical_latitude,
         "lng": numerical_longitude,
-        "locationName": "Precise City/Village/District",
-        "timestamp": "ISO timestamp",
-        "sourceUrl": "Link to the specific post or the asset home page if post URL unavailable",
+        "locationName": "Precise location (City, District, Village)",
+        "timestamp": "ISO 8601 timestamp (e.g., 2026-01-13T14:30:00Z)",
+        "sourceUrl": "Direct link to post/article (REQUIRED - provide the actual URL you found)",
         "sourceCategory": "independent" | "mainstream",
-        "sourceAlignment": "The 'Alignment' string of the reporting asset"
+        "sourceAlignment": "Alignment string (for independent only) or null (for mainstream)"
       }
     ]
 
-    Ensure coordinates are precise. For independent sources, provide the direct link found during search.
+    ═══════════════════════════════════════════════════════════════
+    QUALITY STANDARDS
+    ═══════════════════════════════════════════════════════════════
+    ✓ Coordinates must be accurate (use Google Search to verify locations)
+    ✓ Every event must have a real sourceUrl (the actual link you found during search)
+    ✓ Timestamps should be as precise as possible based on post/article date
+    ✓ Severity ratings: critical (mass casualties/strategic), high (combat/strikes), medium (skirmishes), low (posturing/movements)
+    ✓ DO NOT invent events - only extract what you actually find in searches
+
+    Begin your search and extraction now.
   `;
 
   const execution = async (): Promise<AnalysisResult> => {
