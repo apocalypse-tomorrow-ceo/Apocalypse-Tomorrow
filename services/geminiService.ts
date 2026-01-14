@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { AnalysisResult, Region } from "../types";
 

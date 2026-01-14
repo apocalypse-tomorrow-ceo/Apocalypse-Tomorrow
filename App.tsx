@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { REGIONS } from './constants';
-import { ConflictEvent, Region, GroundingSource, EventType } from './types';
+import { ConflictEvent, Region, GroundingSource, EventType, MilitantGroup } from './types';
 import { analyzeRegion } from './services/geminiService';
 import MapComponent from './components/MapComponent';
 
@@ -16,6 +16,7 @@ const App: React.FC = () => {
   const [selectedEvent, setSelectedEvent] = useState<ConflictEvent | null>(null);
   const [activeFilters, setActiveFilters] = useState<EventType[]>(Object.values(EventType));
   const [activeMediaTab, setActiveMediaTab] = useState<'mainstream' | 'independent'>('mainstream');
+  const [sidebarMode, setSidebarMode] = useState<'signals' | 'militants'>('signals');
   const [showAssets, setShowAssets] = useState<boolean>(false);
   const [showControlLayer, setShowControlLayer] = useState<boolean>(true);
 
@@ -41,6 +42,10 @@ const App: React.FC = () => {
 
   useEffect(() => {
     fetchData(selectedRegion);
+    // Reset sidebar mode if the new region doesn't have militants
+    if (sidebarMode === 'militants' && !selectedRegion.militantGroups) {
+      setSidebarMode('signals');
+    }
   }, [selectedRegion, fetchData]);
 
   useEffect(() => {
@@ -114,6 +119,42 @@ const App: React.FC = () => {
           event.severity === 'high' ? 'bg-orange-500' :
           'bg-amber-500'
         }`}></div>
+      </div>
+    </div>
+  );
+
+  const MilitantCard: React.FC<{ group: MilitantGroup }> = ({ group }) => (
+    <div className="p-4 rounded-sm border border-white/5 bg-white/2 hover:bg-white/5 transition-all group relative overflow-hidden">
+      <div className="flex gap-4 items-start">
+        {group.logoUrl && (
+          <div className="w-12 h-12 shrink-0 bg-black/40 border border-white/10 rounded-sm flex items-center justify-center p-1 overflow-hidden group-hover:border-amber-500/50 transition-colors">
+            <img 
+              src={group.logoUrl} 
+              alt={group.name} 
+              className="w-full h-full object-contain filter grayscale group-hover:grayscale-0 transition-all duration-300 scale-90"
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = 'none';
+              }}
+            />
+          </div>
+        )}
+        <div className="flex-1 min-w-0">
+          <div className="flex justify-between items-start mb-1 gap-2">
+            <h3 className="text-sm font-bold text-slate-100 group-hover:text-white truncate">{group.name}</h3>
+            <span className="text-[8px] font-mono bg-red-900/30 text-red-400 px-1.5 py-0.5 rounded uppercase tracking-widest shrink-0">
+              {group.status}
+            </span>
+          </div>
+          <p className="text-[11px] text-slate-400 leading-relaxed mb-3 mono line-clamp-3">
+            {group.description}
+          </p>
+          <div className="flex items-center gap-4">
+            <div className="flex flex-col">
+              <span className="text-[8px] uppercase text-slate-500 font-bold">Primary AOR</span>
+              <span className="text-[10px] text-slate-300 font-mono">{group.areaOfOperation}</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -279,62 +320,96 @@ const App: React.FC = () => {
         </main>
 
         <aside className="w-96 bg-[#0a0a0a] border-l border-white/10 flex flex-col z-20">
-          <div className="p-6 border-b border-white/10 bg-[#0c0c0c]">
-            <h2 className="text-sm font-bold uppercase tracking-widest text-slate-100 flex items-center justify-between">
-              Live Intel Feed
-              <span className="px-2 py-0.5 rounded-full bg-red-500/20 text-red-500 text-[10px] animate-pulse uppercase tracking-wider">Intercepting</span>
-            </h2>
+          <div className="bg-[#0c0c0c] border-b border-white/10 grid grid-cols-2">
+            <button 
+              onClick={() => setSidebarMode('signals')}
+              className={`py-4 text-[11px] font-bold uppercase tracking-[0.2em] transition-all relative ${
+                sidebarMode === 'signals' ? 'text-red-500 bg-white/2' : 'text-slate-500 hover:text-slate-300'
+              }`}
+            >
+              SIGINT
+              {sidebarMode === 'signals' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-red-600"></div>}
+            </button>
+            <button 
+              onClick={() => setSidebarMode('militants')}
+              disabled={!selectedRegion.militantGroups}
+              className={`py-4 text-[11px] font-bold uppercase tracking-[0.2em] transition-all relative disabled:opacity-20 ${
+                sidebarMode === 'militants' ? 'text-amber-500 bg-white/2' : 'text-slate-500 hover:text-slate-300'
+              }`}
+            >
+              HUMINT
+              {sidebarMode === 'militants' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-amber-600"></div>}
+            </button>
           </div>
 
-          <div className="grid grid-cols-2 bg-[#0c0c0c] border-b border-white/5">
-            <button 
-              onClick={() => setActiveMediaTab('mainstream')}
-              className={`py-3 text-[10px] font-bold uppercase tracking-[0.2em] transition-all relative ${
-                activeMediaTab === 'mainstream' ? 'text-blue-400 bg-white/5' : 'text-slate-500 hover:text-slate-300'
-              }`}
-            >
-              Mainstream
-              {activeMediaTab === 'mainstream' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-500"></div>}
-            </button>
-            <button 
-              onClick={() => setActiveMediaTab('independent')}
-              className={`py-3 text-[10px] font-bold uppercase tracking-[0.2em] transition-all relative ${
-                activeMediaTab === 'independent' ? 'text-purple-400 bg-white/5' : 'text-slate-500 hover:text-slate-300'
-              }`}
-            >
-              Independent
-              {activeMediaTab === 'independent' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-purple-500"></div>}
-            </button>
-          </div>
-          
-          <div className="flex-1 overflow-y-auto custom-scrollbar">
-            {isLoading && (
-              <div className="p-4 space-y-4">
-                 {Array.from({length: 4}).map((_, i) => (
-                  <div key={i} className="p-4 bg-white/5 rounded-sm animate-pulse space-y-2">
-                    <div className="h-3 bg-white/10 rounded w-1/2"></div>
-                    <div className="h-2 bg-white/10 rounded w-full"></div>
-                    <div className="h-2 bg-white/10 rounded w-3/4"></div>
+          {sidebarMode === 'signals' ? (
+            <>
+              <div className="p-4 bg-[#0c0c0c] border-b border-white/5 flex items-center justify-between">
+                <h2 className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Live Intel Feed</h2>
+                <span className="px-2 py-0.5 rounded-full bg-red-500/10 text-red-500 text-[9px] animate-pulse uppercase tracking-widest border border-red-500/20">Intercepting</span>
+              </div>
+
+              <div className="grid grid-cols-2 bg-[#0c0c0c] border-b border-white/5">
+                <button 
+                  onClick={() => setActiveMediaTab('mainstream')}
+                  className={`py-3 text-[10px] font-bold uppercase tracking-[0.2em] transition-all relative ${
+                    activeMediaTab === 'mainstream' ? 'text-blue-400 bg-white/5' : 'text-slate-500 hover:text-slate-300'
+                  }`}
+                >
+                  Mainstream
+                  {activeMediaTab === 'mainstream' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-500"></div>}
+                </button>
+                <button 
+                  onClick={() => setActiveMediaTab('independent')}
+                  className={`py-3 text-[10px] font-bold uppercase tracking-[0.2em] transition-all relative ${
+                    activeMediaTab === 'independent' ? 'text-purple-400 bg-white/5' : 'text-slate-500 hover:text-slate-300'
+                  }`}
+                >
+                  Independent
+                  {activeMediaTab === 'independent' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-purple-500"></div>}
+                </button>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto custom-scrollbar">
+                {isLoading && (
+                  <div className="p-4 space-y-4">
+                     {Array.from({length: 4}).map((_, i) => (
+                      <div key={i} className="p-4 bg-white/5 rounded-sm animate-pulse space-y-2">
+                        <div className="h-3 bg-white/10 rounded w-1/2"></div>
+                        <div className="h-2 bg-white/10 rounded w-full"></div>
+                        <div className="h-2 bg-white/10 rounded w-3/4"></div>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            )}
-            
-            {!isLoading && displayedEvents.length === 0 && (
-              <div className="text-center py-20 px-6">
-                <p className="text-slate-500 italic text-sm font-mono tracking-tight">SILENCE IN SECTOR</p>
-                <p className="text-[10px] text-slate-600 uppercase mt-2">{error ? 'SYSTEM OFFLINE' : 'No incoming signals matched the current protocol.'}</p>
-              </div>
-            )}
+                )}
+                
+                {!isLoading && displayedEvents.length === 0 && (
+                  <div className="text-center py-20 px-6">
+                    <p className="text-slate-500 italic text-sm font-mono tracking-tight">SILENCE IN SECTOR</p>
+                    <p className="text-[10px] text-slate-600 uppercase mt-2">{error ? 'SYSTEM OFFLINE' : 'No incoming signals matched protocol.'}</p>
+                  </div>
+                )}
 
-            {!isLoading && displayedEvents.length > 0 && (
-              <div className="p-4 space-y-4">
-                {displayedEvents.map(event => (
-                  <EventCard key={event.id} event={event} />
-                ))}
+                {!isLoading && displayedEvents.length > 0 && (
+                  <div className="p-4 space-y-4">
+                    {displayedEvents.map(event => (
+                      <EventCard key={event.id} event={event} />
+                    ))}
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+            </>
+          ) : (
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-4">
+              <div className="mb-4">
+                <h2 className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">Militant Profiles</h2>
+                <p className="text-[9px] text-slate-600 italic">Database of verified active groups in {selectedRegion.name}.</p>
+              </div>
+              {selectedRegion.militantGroups?.map((group, idx) => (
+                <MilitantCard key={idx} group={group} />
+              ))}
+            </div>
+          )}
 
           {/* Verification Logs & Tracked Assets Footer Area */}
           <div className="border-t border-white/10 bg-black/40 flex flex-col min-h-0">

@@ -35,6 +35,15 @@ export interface MonitoredSource {
   alignment: string;
 }
 
+export interface MilitantGroup {
+  name: string;
+  description: string;
+  logoUrl?: string;
+  allegiance?: string;
+  status?: 'Active' | 'Dormant' | 'Declining';
+  areaOfOperation?: string;
+}
+
 export interface Region {
   id: string;
   name: string;
@@ -44,6 +53,7 @@ export interface Region {
   description: string;
   monitoredSources?: MonitoredSource[];
   territories?: Territory[];
+  militantGroups?: MilitantGroup[];
 }
 
 export interface GroundingSource {
